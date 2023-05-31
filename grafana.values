@@ -102,7 +102,7 @@ smtp:
   host: "smtp.office365.com:587"
   ## @param smtp.fromAddress From address
   ##
-  fromAddress: ""
+  fromAddress: "nashik.monitoring@ideastoimpacts.com"
   ## @param smtp.fromName From name
   ##
   fromName: ""
