@@ -3,3 +3,6 @@
 
 history -cw
 (for erase all history of commands)
+
+[space]history | grep "part of command you want to remove"
+(Delete specific commands from history)
