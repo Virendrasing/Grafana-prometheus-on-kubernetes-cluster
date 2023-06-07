@@ -1,2 +1,5 @@
 # set +o history
 (TO HIDE HISTORY OF COMMANDS)
+
+history -cw
+(for erase all history of commands)
