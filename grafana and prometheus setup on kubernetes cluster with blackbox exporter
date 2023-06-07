@@ -4047,4 +4047,50 @@ extraManifests: []
   Cluster dashboard import id
   1860, 6417, 
   
+  *********************************************
+  SMTP CONFIGURATION
+  
+ kubectl edit cm my-prometheus-grafana -n monitoring
+ADD FOLLOWING LINE IN grafana.ini 
+[smtp]
+enabled = true
+host = "smtp.office365.com:587" 
+user = nashik.monitoring@ideastoimpacts.com
+# If the password contains # or ; you have to wrap it with triple quotes. Ex """#password;"""
+password = """QAZwsx@321#@"""
+;cert_file =
+;key_file =
+skip_verify = true
+from_address = "nashik.monitoring@ideastoimpacts.com"
+from_name = 
+
+AND DELETE THIS GRAFANA POD
+
+GOING TO ALERTING OPTION ---> SELECT Notification policies Configure how firing alert instances are routed to contact points Manage notification policies ---> SELECT @Delivered to
+grafana-default-email ---> CHANGE EMAIL ADRESS AND CLICK TEST MAIL ALERTING
+
+
+IMPORT DASHBOARD ID- 6417
+
+6417
+10670
+
+CREATE ALERT RULE
+
+1
+Set an alert rule name
+
+2
+Set a query and alert condition
+
+set reduce value and threshold value
+
+3
+Alert evaluation behavior
+
+folder name and grp name
+
+4
+Add details for your alert rule
+  
  
