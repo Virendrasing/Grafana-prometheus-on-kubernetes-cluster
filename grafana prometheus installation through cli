@@ -1,0 +1,247 @@
+BLACKBOX EXPORTER INSTALLATION WITH UAT AKASH AGRI DEPLOYMENT
+
+ 
+ 
+ 
+ wget https://github.com/prometheus/blackbox_exporter/releases/download/v0.14.0/blackbox_exporter-0.14.0.linux-amd64.tar.gz
+ 
+ tar xvzf blackbox_exporter-0.14.0.linux-amd64.tar.gz
+ 
+ cd blackbox_exporter-0.14.0.linux-amd64
+ ./blackbox_exporter -h
+ sudo mv blackbox_exporter /usr/local/bin
+ sudo mkdir -p /etc/blackbox
+ sudo mv blackbox.yml /etc/blackbox
+ cd /etc/blackbox/
+ sudo useradd -rs /bin/false blackbox
+ sudo chown blackbox:blackbox /usr/local/bin/blackbox_exporter
+ sudo chown -R blackbox:blackbox /etc/blackbox/*
+ cd /lib/systemd/system
+ sudo touch blackbox.service
+ 
+ vi blackbox.service
+ 
+[Unit]
+Description=Blackbox Exporter Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=blackbox
+Group=blackbox
+ExecStart=/usr/local/bin/blackbox_exporter \
+  --config.file=/etc/blackbox/blackbox.yml \
+  --web.listen-address=":9115"
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+
+sudo systemctl enable blackbox.service
+sudo systemctl start blackbox.service
+systemctl status blackbox.service
+curl http://localhost:9115/metrics
+http://public-ip:9115/
+ 
+**************************************************** 
+
+
+cd /etc/prometheus/
+
+vi prometheus.yml
+  
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+    - targets: ['localhost:9090', 'localhost:9115']
+	
+	
+ps aux | grep prometheus
+  
+OUTPUT-- prometh+  282784  0.1  1.0 1413308 83696 ?       Ssl  Jul10  15:38 /usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/ --web.console.templates=/etc/prometheus/consoles --web.console.libraries=/etc/prometheus/console_libraries --web.listen-address=0.0.0.0:9090
+  
+KILL THIS OLD PID NO WITH RUNNING PROMETHEUS Service
+sudo kill -HUP 282784
+  
+HITT URL TO CHECK TARGET UPDATED WITH BLACKBOX PROMETHEUS EXPORTER ADDED
+  
+http://public-ip:9090/targets
+  
+******************************************************************
+
+vi blackbox.yml
+  
+  
+modules:
+  http_prometheus:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2"]
+      method: GET
+      preferred_ip_protocol: "ip4"
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
+
+		
+
+blackbox_exporter --config.check
+
+ps aux | grep blackbox
+
+sudo kill -HUP 397908
+ 
+****************************************************************** 
+ 
+ 
+vi prometheus.yml
+ 
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_prometheus]
+    static_configs:
+      - targets:
+        - https://google.com
+        - https://api-url  # Target to probe with https.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+
+		
+		
+ps aux | grep prometheus
+sudo kill -HUP 282784
+
+CHECK EXPORTER URL ADDED IN PROMETHEUS TARGET UP 
+
+http://public-ip:9090/targets#pool-blackbox
+
+*********************************************************************
+
+IMPORT DASHBOARD 
+
+7587
+
+
+
+ 
+************************************************************************************************************************************************************************************************************
+
+PROD MONITORING GRAFANA PROMETHEUS INSTALLATION
+
+wget https://github.com/prometheus/prometheus/releases/download/v2.37.6/prometheus-2.37.6.linux-amd64.tar.gz
+tar xvfz prometheus-*.tar.gz
+sudo mkdir /etc/prometheus /var/lib/prometheus
+cd prometheus-2.37.6.linux-amd64
+sudo mv prometheus promtool /usr/local/bin/
+sudo mv prometheus.yml /etc/prometheus/prometheus.yml
+sudo mv consoles/ console_libraries/ /etc/prometheus/
+prometheus --version
+
+
+Configure Prometheus as a Service
+
+sudo useradd -rs /bin/false prometheus
+sudo chown -R prometheus: /etc/prometheus /var/lib/prometheus
+sudo vi /etc/systemd/system/prometheus.service
+
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Restart=always
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/var/lib/prometheus/ \
+        --web.console.templates=/etc/prometheus/consoles \
+        --web.console.libraries=/etc/prometheus/console_libraries \
+        --web.listen-address=0.0.0.0:9090
+    --storage.tsdb.retention.time=3d
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+sudo systemctl enable prometheus
+sudo systemctl start prometheus
+sudo systemctl status prometheus
+
+
+Configure Node Exporter on the Client
+
+wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+tar xvfz node_exporter-*.tar.gz
+sudo mv node_exporter-1.5.0.linux-amd64/node_exporter /usr/local/bin
+sudo useradd -rs /bin/false node_exporter
+sudo vi /etc/systemd/system/node_exporter.service
+
+
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
+sudo systemctl status node_exporter
+
+
+Configure Prometheus to Monitor Client Nodes
+
+sudo vi /etc/prometheus/prometheus.yml
+
+
+- job_name: "remote_collector"
+  static_configs:
+    - targets: ["localhost:9100"]
+	
+
+sudo systemctl restart prometheus
+
+
+Install and Deploy the Grafana Server
+
+
+sudo apt-get install -y apt-transport-https software-properties-common
+sudo wget -q -O /usr/share/keyrings/grafana.key https://apt.grafana.com/gpg.key
+echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+sudo apt-get update
+sudo apt-get install grafana
+sudo systemctl enable grafana-server.service
+sudo systemctl start grafana-server
+sudo systemctl status grafana-server
+	
+		
+		
+
+ 
+	
